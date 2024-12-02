@@ -9,13 +9,11 @@ on:
     status: success
 jobs:
   test:
-    name: Test
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rust
-      - name: Run tests
+          toolchain: stable
       - run: cargo test --all-features
-
