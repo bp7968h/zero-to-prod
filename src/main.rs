@@ -1,21 +1,12 @@
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-
-async fn _greet(req: HttpRequest) -> impl Responder {
-    let name = req.match_info().get("name").unwrap_or("World");
-    format!("Hello {}", &name)
-}
-
-async fn health_check() -> impl Responder {
-    HttpResponse::Ok()
-}
+use zero_to_prod::run;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    HttpServer::new(|| {
-        App::new()
-            .route("/health_check", web::get().to(health_check))
-    })
-    .bind("127.0.0.1:8000")?
-    .run()
-    .await
+    match run() {
+        Ok(srv) => {
+            println!("Server listeneing on 8000");
+            srv.await
+        },
+        Err(e) => Err(e)?
+    }
 }

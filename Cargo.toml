@@ -1,8 +1,19 @@
 [package]
 name = "zero-to-prod"
 version = "0.1.0"
+authors = ["Bhuwan Pandit"]
 edition = "2021"
+default-run = "zero-to-prod"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "zero-to-prod"
+path = "src/main.rs"
+
 
 [dependencies]
 actix-web = "4"
+reqwest = "0.12.9"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
