@@ -6,7 +6,7 @@ async fn main() -> Result<(), std::io::Error> {
         Ok(srv) => {
             println!("Server listeneing on 8000");
             srv.await
-        },
-        Err(e) => Err(e)?
+        }
+        Err(e) => Err(e)?,
     }
 }
