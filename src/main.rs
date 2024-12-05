@@ -9,7 +9,7 @@ async fn main() -> Result<(), std::io::Error> {
 
     match run(listener) {
         Ok(srv) => {
-            println!("Server listeneing on {}", rand_port);
+            println!("Server listening on {}", rand_port);
             srv.await
         }
         Err(e) => Err(e)?,
