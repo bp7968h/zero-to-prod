@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+# set -x
 set -eo pipefail
 
 # Check if dependencies are installed in the system
@@ -57,5 +57,5 @@ done
 
 DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 sqlx database create --database-url ${DATABASE_URL}
-sqlx migrate run
+sqlx migrate run --database-url ${DATABASE_URL}
 >&2 echo "Postgres has been migrated, ready to go!"
