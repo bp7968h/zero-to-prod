@@ -1,8 +1,9 @@
 target/
 tests/
 .github/
-.cargo/
+.env
 init_db.sh
 input.hurl
 pre_commit.sh
 README.sh
+Dockerfile
