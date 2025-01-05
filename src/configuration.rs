@@ -36,18 +36,17 @@ impl DatabaseSettings {
         };
 
         PgConnectOptions::new()
-        .host(&self.host)
-        .username(&self.username)
-        .password(&self.password.expose_secret())
-        .port(self.port)
-        .ssl_mode(ssl_mode)
+            .host(&self.host)
+            .username(&self.username)
+            .password(self.password.expose_secret())
+            .port(self.port)
+            .ssl_mode(ssl_mode)
     }
 
     pub fn with_db(&self) -> PgConnectOptions {
         let options = self.without_db().database(&self.database_name);
-        let opts = options.log_statements(tracing_log::log::LevelFilter::Trace);
 
-        opts
+        options.log_statements(tracing_log::log::LevelFilter::Trace)
     }
 }
 
@@ -55,13 +54,22 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     let base_path = std::env::current_dir().expect("Failed to determine current dir");
     let configuration_dir = base_path.join("configuration");
 
-    let environment: Environment = std::env::var("APP_ENVIRONMENT").unwrap_or_else(|_| "local".into()).try_into().expect("Failed to parse APP_ENVIRONMENT");
+    let environment: Environment = std::env::var("APP_ENVIRONMENT")
+        .unwrap_or_else(|_| "local".into())
+        .try_into()
+        .expect("Failed to parse APP_ENVIRONMENT");
     let environment_filename = format!("{}.yaml", environment.as_str());
 
     let settings = config::Config::builder()
         .add_source(config::File::from(configuration_dir.join("base.yaml")))
-        .add_source(config::File::from(configuration_dir.join(environment_filename)))
-        .add_source(config::Environment::with_prefix("APP").prefix_separator("_").separator("__"))
+        .add_source(config::File::from(
+            configuration_dir.join(environment_filename),
+        ))
+        .add_source(
+            config::Environment::with_prefix("APP")
+                .prefix_separator("_")
+                .separator("__"),
+        )
         .build()?;
 
     settings.try_deserialize::<Settings>()
