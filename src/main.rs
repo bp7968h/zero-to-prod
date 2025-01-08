@@ -1,10 +1,9 @@
 use std::net::TcpListener;
 
+use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use zero_to_prod::{
-    configuration::get_configuration,
-    startup::run,
-    telementry::{get_subscriber, init_subscriber},
+    configuration::get_configuration, email_client::EmailClient, startup::run, telementry::{get_subscriber, init_subscriber}
 };
 
 #[tokio::main]
@@ -14,11 +13,19 @@ async fn main() -> Result<(), std::io::Error> {
 
     let configuration = get_configuration().expect("Failed to read configurations");
     let connection = PgPoolOptions::new().connect_lazy_with(configuration.database.with_db());
+
+    let sender_email = configuration.email_client.sender().expect("Invalid sender mail address");
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        sender_email,
+        configuration.email_client.api_key.expose_secret()
+    );
+
     let address = format!(
         "{}:{}",
         configuration.application.host, configuration.application.port
     );
     let listener = TcpListener::bind(&address)?;
 
-    run(listener, connection)?.await
+    run(listener, connection, email_client)?.await
 }
