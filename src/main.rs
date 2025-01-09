@@ -1,6 +1,4 @@
 use std::net::TcpListener;
-
-use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use zero_to_prod::{
     configuration::get_configuration,
@@ -24,7 +22,7 @@ async fn main() -> Result<(), std::io::Error> {
     let email_client = EmailClient::new(
         configuration.email_client.base_url,
         sender_email,
-        configuration.email_client.api_key.expose_secret(),
+        configuration.email_client.api_key,
     );
 
     let address = format!(
