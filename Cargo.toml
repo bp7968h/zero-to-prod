@@ -56,3 +56,4 @@ rand = "0.8.5"
 reqwest = { version = "0.12.12", features = ["json", "multipart"] }
 tokio = { version = "1", features = ["rt", "macros"] }
 wiremock = "0.6.2"
+wiremock-multipart = "1.0.0"
