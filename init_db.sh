@@ -31,13 +31,15 @@ DB_HOST="${POSTGRES_HOST:=localhost}"
 
 CONTAINER_NAME="z2p-db"
 SKIP_DOCKER=false
-if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  SKIP_DOCKER=true
-fi
 
-if [[ "${SKIP_DOCKER}" != "true" ]]
-then
-docker run \
+if [[ -z "${CI_INIT}" ]]; then
+  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    SKIP_DOCKER=true
+  fi
+
+  if [[ "${SKIP_DOCKER}" != "true" ]]
+  then
+  docker run \
     -e POSTGRES_USER=${DB_USER} \
     -e POSTGRES_PASSWORD=${DB_PASSWORD} \
     -e POSTGRES_DB=${DB_NAME} \
@@ -45,6 +47,9 @@ docker run \
     --name ${CONTAINER_NAME} \
     -d postgres \
     postgres -N 1000
+  fi
+else
+  echo "CI_INIT is set. Skipping Docker setup."
 fi
 
 # Keep pinging Postgres until it's ready to accept commands
