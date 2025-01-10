@@ -1,5 +1,5 @@
-use std::net::TcpListener;
 use sqlx::postgres::PgPoolOptions;
+use std::net::TcpListener;
 use zero_to_prod::{
     configuration::get_configuration,
     email_client::EmailClient,

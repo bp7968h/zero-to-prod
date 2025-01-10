@@ -1,8 +1,7 @@
 use crate::domain::SubscriberEmail;
-use reqwest::Client;
 use reqwest::multipart::Form;
+use reqwest::Client;
 use secrecy::{ExposeSecret, SecretBox};
-
 
 pub struct EmailClient {
     http_client: Client,
@@ -36,7 +35,8 @@ impl EmailClient {
             html_body: html_content,
             text_body: text_content,
         };
-        self.http_client.post(&url)
+        self.http_client
+            .post(&url)
             .basic_auth("api", Some(self.key.expose_secret()))
             .multipart(request_body.into())
             .send()
@@ -68,7 +68,6 @@ impl<'a> From<SendEmailRequest<'a>> for Form {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::domain::SubscriberEmail;
@@ -76,17 +75,18 @@ mod tests {
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::{Fake, Faker};
+    use secrecy::SecretBox;
     use wiremock::matchers::{basic_auth, method};
     use wiremock::{Mock, MockServer, ResponseTemplate};
-    use secrecy::SecretBox;
     use wiremock_multipart::prelude::*;
-    
+
     #[tokio::test]
     async fn send_email_sends_the_expected_request() {
         let mock_server = MockServer::start().await;
         let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
         let api_key: Box<String> = Box::new(Faker.fake());
-        let email_client = EmailClient::new(mock_server.uri(), sender, SecretBox::new(api_key.clone()));
+        let email_client =
+            EmailClient::new(mock_server.uri(), sender, SecretBox::new(api_key.clone()));
 
         Mock::given(basic_auth("api", *api_key))
             .and(method("POST"))
