@@ -2,6 +2,7 @@ use crate::domain::SubscriberEmail;
 use reqwest::multipart::Form;
 use reqwest::Client;
 use secrecy::{ExposeSecret, SecretBox};
+use std::time::Duration;
 
 pub struct EmailClient {
     http_client: Client,
@@ -11,11 +12,13 @@ pub struct EmailClient {
 }
 
 impl EmailClient {
-    pub fn new(base_url: String, sender: SubscriberEmail, key: SecretBox<String>) -> EmailClient {
-        let http_client = Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .unwrap();
+    pub fn new(
+        base_url: String,
+        sender: SubscriberEmail,
+        key: SecretBox<String>,
+        timeout: Duration,
+    ) -> EmailClient {
+        let http_client = Client::builder().timeout(timeout).build().unwrap();
         EmailClient {
             http_client,
             base_url,
@@ -77,14 +80,15 @@ impl From<SendEmailRequest<'_>> for Form {
 mod tests {
     use crate::domain::SubscriberEmail;
     use crate::email_client::EmailClient;
+    use claims::{assert_err, assert_ok};
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::{Fake, Faker};
     use secrecy::SecretBox;
-    use wiremock::matchers::{basic_auth, method, any};
+    use std::time::Duration;
+    use wiremock::matchers::{any, basic_auth, method};
     use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock_multipart::prelude::*;
-    use claims::{assert_ok, assert_err};
 
     /// Generate a random email subject
     fn subject() -> String {
@@ -95,7 +99,7 @@ mod tests {
     fn content() -> String {
         Paragraph(1..10).fake()
     }
-    
+
     /// Generate a random subscriber email
     fn email() -> SubscriberEmail {
         SubscriberEmail::parse(SafeEmail().fake()).unwrap()
@@ -103,11 +107,21 @@ mod tests {
 
     // Get a test instance of `EmailClient`.
     fn email_client(base_url: String) -> EmailClient {
-        EmailClient::new(base_url, email(), SecretBox::new(Faker.fake()))
+        EmailClient::new(
+            base_url,
+            email(),
+            SecretBox::new(Faker.fake()),
+            Duration::from_millis(200),
+        )
     }
 
     fn email_client_with_key(base_url: String, key: Box<String>) -> EmailClient {
-        EmailClient::new(base_url, email(), SecretBox::new(key))
+        EmailClient::new(
+            base_url,
+            email(),
+            SecretBox::new(key),
+            Duration::from_millis(200),
+        )
     }
 
     #[tokio::test]
@@ -150,20 +164,20 @@ mod tests {
 
     #[tokio::test]
     async fn send_email_fails_if_the_server_returns_500() {
-    // Arrange
+        // Arrange
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
-        
+
         Mock::given(any())
             .respond_with(ResponseTemplate::new(500))
             .expect(1)
             .mount(&mock_server)
             .await;
-        
+
         let outcome = email_client
             .send_email(email(), &subject(), &content(), &content())
             .await;
-        
+
         assert_err!(outcome);
     }
 
@@ -172,19 +186,18 @@ mod tests {
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
 
-        let response = ResponseTemplate::new(200).
-            set_delay(std::time::Duration::from_secs(180));
-        
+        let response = ResponseTemplate::new(200).set_delay(std::time::Duration::from_secs(180));
+
         Mock::given(any())
             .respond_with(response)
             .expect(1)
             .mount(&mock_server)
             .await;
-        
+
         let outcome = email_client
             .send_email(email(), &subject(), &content(), &content())
             .await;
-        
+
         assert_err!(outcome);
     }
 }
