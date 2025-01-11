@@ -1,8 +1,0 @@
-application:
-  host: 0.0.0.0
-database:
-  require_ssl: true
-email_client:
-  base_url: "https://api.mailgun.net/v3/sandbox3ea141ac779741699dc053ea3704e43c.mailgun.org/messages"
-  sender_email: "mailgun@sandbox3ea141ac779741699dc053ea3704e43c.mailgun.org"
-  api_key: "api"
