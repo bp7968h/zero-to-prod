@@ -1,8 +1,8 @@
 use actix_web::{web, HttpResponse};
+use sqlx::types::chrono::Utc;
+use sqlx::types::Uuid;
 use sqlx::PgPool;
 use tracing;
-use sqlx::types::Uuid;
-use sqlx::types::chrono::Utc;
 
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 

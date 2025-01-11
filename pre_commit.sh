@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-cargo fmt && cargo clippy
+cargo fmt --check && SQLX_OFFLINE=true cargo clippy -- -D warnings
