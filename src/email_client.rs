@@ -54,7 +54,7 @@ struct SendEmailRequest<'a> {
     html_body: &'a str,
 }
 
-impl<'a> From<SendEmailRequest<'a>> for Form {
+impl From<SendEmailRequest<'_>> for Form {
     fn from(value: SendEmailRequest) -> Self {
         let mut form = Form::new();
         form = form
