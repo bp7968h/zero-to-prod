@@ -1,8 +1,8 @@
 use once_cell::sync::Lazy;
+use reqwest::Url;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
-use reqwest::Url;
 use zero_to_prod::configuration::{get_configuration, DatabaseSettings};
 use zero_to_prod::startup::{get_connection_pool, Application};
 use zero_to_prod::telementry::{get_subscriber, init_subscriber};
@@ -23,7 +23,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 #[derive(Clone)]
 pub struct ConfirmationLinks {
     pub html: Url,
-    pub plain_text: Url
+    pub plain_text: Url,
 }
 
 pub struct TestApp {
@@ -57,7 +57,10 @@ impl TestApp {
         assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
         confirmation_link.set_port(Some(self.port)).unwrap();
 
-        ConfirmationLinks { html: confirmation_link.clone(), plain_text: confirmation_link }
+        ConfirmationLinks {
+            html: confirmation_link.clone(),
+            plain_text: confirmation_link,
+        }
     }
 }
 
