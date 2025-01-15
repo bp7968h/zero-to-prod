@@ -2,6 +2,7 @@ use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
+use reqwest::Url;
 use zero_to_prod::configuration::{get_configuration, DatabaseSettings};
 use zero_to_prod::startup::{get_connection_pool, Application};
 use zero_to_prod::telementry::{get_subscriber, init_subscriber};
@@ -19,10 +20,17 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     };
 });
 
+#[derive(Clone)]
+pub struct ConfirmationLinks {
+    pub html: Url,
+    pub plain_text: Url
+}
+
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
     pub email_server: MockServer,
+    pub port: u16,
 }
 
 impl TestApp {
@@ -34,6 +42,22 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub fn get_confirmation_links(&self, email_request: &wiremock::Request) -> ConfirmationLinks {
+        let body = std::str::from_utf8(&email_request.body).unwrap();
+
+        let links: Vec<_> = linkify::LinkFinder::new()
+            .links(body)
+            .filter(|l| *l.kind() == linkify::LinkKind::Url)
+            .collect();
+        assert_eq!(links.len(), 2);
+        let raw_link = links[0].as_str().to_owned();
+        let mut confirmation_link = Url::parse(&raw_link).unwrap();
+        assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
+        confirmation_link.set_port(Some(self.port)).unwrap();
+
+        ConfirmationLinks { html: confirmation_link.clone(), plain_text: confirmation_link }
     }
 }
 
@@ -55,12 +79,14 @@ pub async fn spawn_app() -> TestApp {
     let application = Application::build(configuration.clone())
         .await
         .expect("Failed to build Application");
-    let address = format!("http://127.0.0.1:{}", application.port());
+    let application_port = application.port();
+    let address = format!("http://127.0.0.1:{}", application_port);
     let _ = tokio::spawn(application.run_until_stopped());
 
     TestApp {
-        address,
         db_pool: get_connection_pool(&configuration.database),
+        port: application_port,
+        address,
         email_server,
     }
 }
