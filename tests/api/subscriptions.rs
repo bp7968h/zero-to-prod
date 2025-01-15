@@ -85,3 +85,27 @@ async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
         );
     }
 }
+
+#[tokio::test]
+async fn subscribe_sends_a_confirmation_email_with_a_link() {
+    let app = spawn_app().await;
+    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&app.email_server)
+        .await;
+
+    app.post_subscriptions(body.into()).await;
+
+    let email_request = &app.email_server.received_requests().await.unwrap()[0];
+    let body = std::str::from_utf8(&email_request.body).unwrap();
+
+    let links: Vec<_> = linkify::LinkFinder::new()
+        .links(body)
+        .filter(|l| *l.kind() == linkify::LinkKind::Url)
+        .collect();
+
+    assert_eq!(links.len(), 2);
+    assert_eq!(links[0].as_str(), links[1].as_str());
+}

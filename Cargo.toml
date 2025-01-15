@@ -50,10 +50,12 @@ strip = true
 [dev-dependencies]
 claims = "0.8.0"
 fake = { version = "3.1.0", features = []}
+linkify = "0.10.0"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
 rand = "0.8.5"
 reqwest = { version = "0.12.12", features = ["json", "multipart"] }
+serde_json = "1.0.61"
 tokio = { version = "1", features = ["rt", "macros"] }
-wiremock = "0.6.2"
+wiremock = "0.6"
 wiremock-multipart = "1.0.0"
