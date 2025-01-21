@@ -3,7 +3,10 @@ use std::fmt::Display;
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 use crate::email_client::EmailClient;
 use crate::startup::ApplicationBaseUrl;
+use actix_web::http::StatusCode;
+use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
+use anyhow::Context;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sqlx::types::chrono::Utc;
@@ -11,9 +14,6 @@ use sqlx::types::Uuid;
 use sqlx::PgPool;
 use sqlx::{Executor, Postgres, Transaction};
 use tracing;
-use anyhow::Context;
-use actix_web::http::StatusCode;
-use actix_web::ResponseError;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -47,16 +47,33 @@ pub async fn subscribe(
     base_url: web::Data<ApplicationBaseUrl>,
 ) -> Result<HttpResponse, SubscribeError> {
     let new_subscriber = form.0.try_into().map_err(SubscribeError::ValidationError)?;
-    let mut transaction = pool.begin().await.context("Failed to acquire a Postgres connection from the pool")?;
+    let mut transaction = pool
+        .begin()
+        .await
+        .context("Failed to acquire a Postgres connection from the pool")?;
 
-    let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber).await.context("Failed to insert new subscriber in the database.")?;
+    let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber)
+        .await
+        .context("Failed to insert new subscriber in the database.")?;
 
     let subscription_token = generate_subscription_token();
-    store_token(&mut transaction, subscriber_id, &subscription_token).await.context("Failed to store the confirmation token for a new subscriber.")?;
-    
-    transaction.commit().await.context("Failed to commit SQL transaction to store a new subscriber.")?;
+    store_token(&mut transaction, subscriber_id, &subscription_token)
+        .await
+        .context("Failed to store the confirmation token for a new subscriber.")?;
 
-    send_confirmation_email( &email_client, new_subscriber, &base_url.0, &subscription_token ).await.context("Failed to send a confirmation email.")?;
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit SQL transaction to store a new subscriber.")?;
+
+    send_confirmation_email(
+        &email_client,
+        new_subscriber,
+        &base_url.0,
+        &subscription_token,
+    )
+    .await
+    .context("Failed to send a confirmation email.")?;
 
     Ok(HttpResponse::Ok().finish())
 }
